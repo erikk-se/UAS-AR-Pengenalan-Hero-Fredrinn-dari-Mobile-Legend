@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Hero Mobile Legend</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.0/dist/aframe-extras.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/gh/wmurphyrd/aframe-super-hands-component/dist/aframe-super-hands.min.js"></script>
+</head>
+
+<body style="margin: 0; overflow: hidden;">
+    <a-scene markers_start vr-mode-ui="enabled: false" color-space="sRGB" renderer="gammaOutput: true" embedded
+        arjs='debugUIEnabled: false; sourceType: webcam; patternRatio: 0.90;'>
+        <a-marker id="exp" type="pattern" url="assets/marker/pattern-exp.patt">
+            <a-entity id="fredrinn" gltf-model="url(assets/model/fredrinn.glb)" scale="3 3 3" grabbable stretchable
+                draggable rotation="-90 0 0" position="0 0 0" animation-mixer="clip: city_action; loop: once;">
+            </a-entity>
+        </a-marker>
+        <a-entity camera look-controls>
+            <a-cursor></a-cursor>
+        </a-entity>
+
+        <!-- Add hand controls for VR interaction -->
+        <a-entity id="leftHand" hand-controls="hand: left; handModelStyle: lowPoly; color: #ffcccc"></a-entity>
+        <a-entity id="rightHand" hand-controls="hand: right; handModelStyle: lowPoly; color: #ffcccc"></a-entity>
+        <a-entity id="soundfredrinn"
+            sound="src: url(assets/sounds/fredrinn.ogg); autoplay: false; loop: true;"></a-entity>
+    </a-scene>
+
+    <script>
+        AFRAME.registerComponent('draggable-rotate', {
+            schema: {
+                enabled: { default: true }
+            },
+            init: function () {
+                this.startRotation = new THREE.Vector3();
+                this.el.addEventListener('dragstart', this.onDragStart.bind(this));
+                this.el.addEventListener('dragmove', this.onDragMove.bind(this));
+            },
+            onDragStart: function (evt) {
+                this.startRotation.copy(this.el.object3D.rotation);
+                this.startPoint = evt.detail.position.clone();
+            },
+            onDragMove: function (evt) {
+                const currentPoint = evt.detail.position.clone();
+                const diff = currentPoint.sub(this.startPoint);
+                this.el.object3D.rotation.x = this.startRotation.x + diff.y * 0.01;
+                this.el.object3D.rotation.y = this.startRotation.y + diff.x * 0.01;
+            }
+        });
+        AFRAME.registerComponent('play-next-animation', {
+            init: function () {
+                var el = this.el;
+                var currentAnimation = 'city_action';
+                var nextAnimation = 'city_idle'; // Ganti dengan nama animasi kedua
+
+                el.addEventListener('animation-finished', function () {
+                    if (currentAnimation === 'city_action') {
+                        currentAnimation = nextAnimation;
+                    } else {
+                        currentAnimation = 'city_action';
+                    }
+
+                    el.setAttribute('animation-mixer', 'clip', currentAnimation);
+                });
+            }
+        });
+
+        document.getElementById(`fredrinn`).setAttribute('draggable-rotate', '');
+
+        var marker = document.querySelector(`#exp`);
+        var model = document.querySelector(`#fredrinn`);
+        var sound = document.querySelector(`#soundfredrinn`);
+
+        model.setAttribute('play-next-animation', '');
+
+        var isModelLoaded = false;
+        var isMarkerFound = false;
+
+        model.addEventListener('model-loaded', function () {
+            isModelLoaded = true;
+            if (isModelLoaded && isMarkerFound) {
+                sound.components.sound.playSound();
+            }
+        });
+
+        marker.addEventListener('markerFound', function () {
+            isMarkerFound = true;
+            if (isModelLoaded && isMarkerFound) {
+                sound.components.sound.playSound();
+            }
+        });
+
+        marker.addEventListener('markerLost', function () {
+            isMarkerFound = false;
+            sound.components.sound.stopSound();
+        });
+
+
+    </script>
+</body>
+
+</html>
